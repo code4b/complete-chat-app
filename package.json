@@ -42,6 +42,7 @@
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
+    "debug": "^4.4.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
     "express-rate-limit": "^7.5.0",
@@ -49,13 +50,16 @@
     "mongoose": "^8.13.2",
     "socket.io": "^4.8.1",
     "swagger-ui-express": "^5.0.1",
-    "ts-node": "^10.9.2"
+    "ts-node": "^10.9.2",
+    "winston": "^3.17.0",
+    "winston-mongodb": "^6.0.0"
   },
   "devDependencies": {
     "@types/amqplib": "^0.10.7",
     "@types/bcryptjs": "*",
     "@types/cors": "*",
     "@types/crypto-js": "*",
+    "@types/debug": "^4.1.12",
     "@types/express": "*",
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "*",

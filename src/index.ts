@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
+import debugLib from 'debug';
 import { connectDB } from './config/database';
 import { createServer } from 'http';
 import { setupWebSocket } from './websocket/socket';
@@ -10,16 +11,19 @@ import authRoutes from './routes/authRoutes';
 import groupRoutes from './routes/groupRoutes';
 import messageRoutes from './routes/messageRoutes';
 import { apiLimiter } from './middlewares/rateLimit';
+import { requestLogger } from './middlewares/logHandler';
+import { errorHandler } from './middlewares/errorHandler';
+import logger from './config/logger';
 
 dotenv.config();
-
+const debug = debugLib('app:server');
 export const app = express();
 const httpServer = createServer(app);
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-
+app.use(requestLogger);
 // Rate limiting
 app.use('/api', apiLimiter);
 
@@ -521,7 +525,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     console.error(err.stack);
     res.status(500).json({ message: 'Something went wrong!' });
 });
-
+app.use(errorHandler);
 // Only connect to database and start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {
     connectDB().then(() => {
