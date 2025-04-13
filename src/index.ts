@@ -226,8 +226,54 @@ const swaggerDocument = {
                         }
                     }
                 }
+            },
+            get: {
+                tags: ['Groups'],
+                security: [{ BearerAuth: [] }],
+                summary: 'List all groups',
+                parameters: [
+              
+                    {
+                        in: 'query',
+                        name: 'limit',
+                        schema: { 
+                            type: 'integer',
+                            default: 50
+                        }
+                    },
+                    {
+                        in: 'query',
+                        name: 'page',
+                        schema: { 
+                            type: 'integer',
+                            default: 1
+                        }
+                    }
+                ],
+                responses: {
+                    '200': {
+                        description: 'Group List retrieved successfully',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'array',
+                                    items: { $ref: '#/components/schemas/Message' }
+                                }
+                            }
+                        }
+                    },
+                    '403': {
+                        description: 'Not authorized',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
             }
         },
+        
         '/api/groups/{groupId}/join': {
             post: {
                 tags: ['Groups'],

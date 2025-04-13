@@ -53,6 +53,7 @@ export const setupWebSocket = async (httpServer: HttpServer) => {
         console.log('Client connected:', authSocket.id);
 
         socket.on('listGroups', async () => {
+            console.log('listGroups', authSocket.id);
             try {
                 const groups = await Group.find({
                     members: new mongoose.Types.ObjectId(authSocket.userId)
