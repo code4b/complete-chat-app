@@ -54,7 +54,21 @@ export const createGroup = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: error.message });
     }
 };
-
+export const listGroups = async (req: AuthRequest, res: Response) => {
+    try {
+        console
+        const groups = await Group.find({
+            $or: [
+                { isPrivate: false },
+                { members: req.user._id },
+                { owner: req.user._id }
+            ]
+        });
+        res.json(groups);
+    } catch (error: any) {
+        res.status(500).json({ message: error.message });
+    }
+};
 export const joinGroup = async (req: AuthRequest, res: Response) => {
     try {
         const group = await Group.findById(req.params.groupId);
@@ -233,3 +247,33 @@ export const transferOwnership = async (req: AuthRequest, res: Response) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+
+// export const listGroups = async (req: AuthRequest, res: Response) => {
+//     try {
+//         const page = parseInt(req.query.page as string) || 1;
+//         const limit = parseInt(req.query.limit as string) || 10;
+//         const skip = (page - 1) * limit;
+
+//         const groups = await Group.find({})
+//         .skip(skip)
+//         .limit(limit);
+
+//         const total = await Group.countDocuments({
+//             $or: [
+//                 { isPrivate: false },
+//                 { members: req.user._id },
+//                 { owner: req.user._id }
+//             ]
+//         });
+
+//         res.json({
+//             groups,
+//             currentPage: page,
+//             totalPages: Math.ceil(total / limit),
+//             totalGroups: total
+//         });
+//     } catch (error: any) {
+//         res.status(500).json({ message: error.message });
+//     }
+// };

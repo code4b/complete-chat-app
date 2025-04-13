@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
+import helmet from 'helmet';
 import dotenv from 'dotenv';
 import debugLib from 'debug';
 import { connectDB } from './config/database';
@@ -22,6 +23,7 @@ const httpServer = createServer(app);
 
 // Middleware
 app.use(cors());
+app.use(helmet());
 app.use(express.json());
 app.use(requestLogger);
 // Rate limiting
@@ -544,7 +546,8 @@ async function startServer() {
         await setupWebSocket(httpServer);
         
         httpServer.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
+            logger.info(`Server running on port ${PORT}`);
+            debug(`Listening at http://localhost:${PORT}`);
         });
     } catch (error) {
         console.error('Failed to start server:', error);

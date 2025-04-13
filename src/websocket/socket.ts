@@ -12,16 +12,17 @@ interface AuthSocket extends Socket {
 }
 
 export const setupWebSocket = async (httpServer: HttpServer) => {
-    const io = new Server(httpServer);
+    const serverOptions = (process.env.NODE_ENV !== 'development') ? {cors: { origin: '*' } } : {}
+    const io = new Server(httpServer, serverOptions);
     const channel = rabbitmq.getChannel();
 
     // Setup queue for this server instance
     const queueResult = await channel.assertQueue('', { exclusive: true });
     const queueName = queueResult.queue;
-    
+
     // Bind to chat messages exchange
     await channel.bindQueue(queueName, 'chat_messages', '');
-    
+
     // Listen for messages from RabbitMQ and broadcast to connected clients
     channel.consume(queueName, (msg: ConsumeMessage | null) => {
         if (msg) {
@@ -51,10 +52,26 @@ export const setupWebSocket = async (httpServer: HttpServer) => {
         const authSocket = socket as AuthSocket;
         console.log('Client connected:', authSocket.id);
 
+        socket.on('listGroups', async () => {
+            try {
+                const groups = await Group.find({
+                    members: new mongoose.Types.ObjectId(authSocket.userId)
+                });
+                const groupsList = groups.map(group => ({
+                    id: group._id,
+                    name: group.name,
+                    memberCount: group.members.length
+                }));
+
+                socket.emit('groupsList', groupsList);
+            } catch (error) {
+                socket.emit('error', 'Failed to fetch groups');
+            }
+        });
         socket.on('joinGroup', async (groupId: string) => {
             try {
                 const group = await Group.findById(groupId);
-                if (!group || !group.members.some(memberId => 
+                if (!group || !group.members.some(memberId =>
                     memberId.equals(new mongoose.Types.ObjectId(authSocket.userId))
                 )) {
                     socket.emit('error', 'Not authorized to join this group');
@@ -65,7 +82,7 @@ export const setupWebSocket = async (httpServer: HttpServer) => {
                 // Bind to group-specific events
                 const routingKey = `group.${groupId}.*`;
                 await channel.bindQueue(queueName, 'group_events', routingKey);
-                
+
                 socket.emit('joined', { groupId });
             } catch (error) {
                 socket.emit('error', 'Failed to join group');
@@ -79,7 +96,7 @@ export const setupWebSocket = async (httpServer: HttpServer) => {
             await channel.unbindQueue(queueName, 'group_events', routingKey);
         });
 
-        socket.on('sendMessage', async (data: { 
+        socket.on('sendMessage', async (data: {
             groupId: string;
             content: string;
         }) => {
