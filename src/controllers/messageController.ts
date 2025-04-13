@@ -2,10 +2,11 @@ import { Request, Response } from 'express';
 import { Message } from '../models/Message';
 import { Group } from '../models/Group';
 import { encryptMessage, decryptMessage } from '../utils/encryption';
+import { rabbitmq } from '../utils/rabbitmq';
 import mongoose from 'mongoose';
 
 interface AuthRequest extends Request {
-    user: any;
+    user: { _id: string };
 }
 
 export const sendMessage = async (req: AuthRequest, res: Response) => {
@@ -21,9 +22,6 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
         }
 
         const userId = new mongoose.Types.ObjectId(req.user._id);
-        console.log(`Checking if user ${userId} is member of group`);
-        console.log('Current group members:', group.members);
-
         if (!group.members.some(memberId => memberId.equals(userId))) {
             console.log('User is not a member of the group');
             return res.status(401).json({ message: 'Not authorized - Not a member of this group' });
@@ -31,13 +29,34 @@ export const sendMessage = async (req: AuthRequest, res: Response) => {
 
         console.log('User is a member, encrypting message');
         const encryptedContent = encryptMessage(content);
+        const now = new Date();
         const message = await Message.create({
             content: encryptedContent,
             sender: userId,
-            group: groupId
+            group: groupId,
+            timestamp: now
         });
 
-        console.log('Message created successfully');
+        // Publish to RabbitMQ
+        const channel = rabbitmq.getChannel();
+        channel.publish('chat_messages', '', Buffer.from(JSON.stringify({
+            groupId,
+            message: {
+                _id: message._id,
+                content: content, // Send decrypted content for real-time display
+                sender: userId,
+                timestamp: now
+            }
+        })));
+
+        // Also publish group event
+        channel.publish('group_events', `group.${groupId}.message`, Buffer.from(JSON.stringify({
+            type: 'new_message',
+            groupId,
+            messageId: message._id
+        })));
+
+        console.log('Message created and published successfully');
         res.status(201).json({
             ...message.toJSON(),
             content: content // Return original content to sender
@@ -61,16 +80,12 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
         }
 
         const userId = new mongoose.Types.ObjectId(req.user._id);
-        console.log(`Checking if user ${userId} is member of group`);
-        console.log('Current group members:', group.members);
-
         if (!group.members.some(memberId => memberId.equals(userId))) {
             console.log('User is not a member of the group');
             return res.status(401).json({ message: 'Not authorized - Not a member of this group' });
         }
 
-        console.log('User is a member, retrieving messages');
-        const query: any = { group: groupId };
+        let query: any = { group: groupId };
         if (before) {
             query.timestamp = { $lt: new Date(before as string) };
         }
@@ -78,14 +93,12 @@ export const getMessages = async (req: AuthRequest, res: Response) => {
         const messages = await Message.find(query)
             .sort({ timestamp: -1 })
             .limit(Number(limit))
-            .populate('sender', 'email');
+            .populate('sender', 'username email');
 
-        console.log(`Found ${messages.length} messages`);
-        
-        // Decrypt messages
-        const decryptedMessages = messages.map(message => ({
-            ...message.toJSON(),
-            content: decryptMessage(message.content)
+        // Decrypt messages for response
+        const decryptedMessages = messages.map(msg => ({
+            ...msg.toJSON(),
+            content: decryptMessage(msg.content)
         }));
 
         res.json(decryptedMessages);

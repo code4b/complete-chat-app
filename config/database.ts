@@ -7,7 +7,7 @@ let mongoServer: MongoMemoryServer;
 const initializeMongoServer = async () => {
     if (!process.env.MONGODB_URI) {
         mongoServer = await MongoMemoryServer.create();
-        console.log(`MongoDB Memory Server Connected: ${mongoServer.connection.host}`);
+        console.log(`MongoDB Memory Server Connected: ${mongoServer.getUri()}`);
         return mongoServer.getUri();
     }
     return process.env.MONGODB_URI;

@@ -3,6 +3,9 @@ import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import dotenv from 'dotenv';
 import { connectDB } from './config/database';
+import { createServer } from 'http';
+import { setupWebSocket } from './websocket/socket';
+import { rabbitmq } from './utils/rabbitmq';
 import authRoutes from './routes/authRoutes';
 import groupRoutes from './routes/groupRoutes';
 import messageRoutes from './routes/messageRoutes';
@@ -11,6 +14,7 @@ import { apiLimiter } from './middlewares/rateLimit';
 dotenv.config();
 
 export const app = express();
+const httpServer = createServer(app);
 
 // Middleware
 app.use(cors());
@@ -521,9 +525,32 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 // Only connect to database and start server if not in test environment
 if (process.env.NODE_ENV !== 'test') {
     connectDB().then(() => {
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-            console.log(`Server running on port ${PORT}`);
-        });
+        startServer();
     });
 }
+
+const PORT = process.env.PORT || 3000;
+
+async function startServer() {
+    try {
+        // Connect to RabbitMQ first
+        await rabbitmq.connect();
+        
+        // Setup WebSocket with RabbitMQ integration
+        await setupWebSocket(httpServer);
+        
+        httpServer.listen(PORT, () => {
+            console.log(`Server running on port ${PORT}`);
+        });
+    } catch (error) {
+        console.error('Failed to start server:', error);
+        process.exit(1);
+    }
+}
+
+// Handle graceful shutdown
+process.on('SIGTERM', async () => {
+    console.log('SIGTERM received. Shutting down gracefully...');
+    await rabbitmq.close();
+    process.exit(0);
+});
