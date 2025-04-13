@@ -40,8 +40,6 @@ A Node.js backend for a secure group messaging system with user authentication, 
 - Jest for Testing
 - Swagger UI for API documentation
 
-[Previous sections remain the same until Error Handling section, which is updated to:]
-
 ## Error Handling & Logging
 
 ### Error Handling System
@@ -92,4 +90,47 @@ A Node.js backend for a secure group messaging system with user authentication, 
     - User identification
     - Error tracking
 
-[Remaining sections stay the same]
+## Known Bottlenecks & Fixes
+
+### Bottleneck Mitigation
+
+1. Single WebSocket Server:
+    - Use Socket.IO with Redis adapter for horizontal scaling
+    - Deploy multiple pods on Kubernetes for load balancing
+
+2. MongoDB Write Bottlenecks:
+    - Use capped collections or write behind pattern
+    - Implement MongoDB sharding in Kubernetes
+
+3. Test Coverage Gaps:
+    - Missing edge case scenarios in WebSocket connections
+    - Insufficient load testing for concurrent users
+    - Incomplete integration tests for group messaging
+    - Limited stress testing for encrypted communication
+    - Lacking performance benchmark tests
+
+4. Logging and Monitoring:
+    - Buffer logs in memory before bulk write to Mongo
+    - Prometheus metrics collection:
+        - Socket.IO connection metrics
+        - Message throughput
+        - Response times
+        - Memory usage
+    - Grafana dashboards:
+        - Real-time system metrics
+        - User activity monitoring
+        - Resource utilization
+        - Alert management
+
+5. Infrastructure Scaling:
+    - Kubernetes autoscaling based on CPU/Memory
+    - Horizontal Pod Autoscaling (HPA)
+    - Node pool management
+    - Load balancer configuration
+
+6. Performance Optimization:
+    - Use gzip/deflate compression
+    - Implement message caching
+    - Set resource limits in Kubernetes
+    - Configure pod affinity rules
+
