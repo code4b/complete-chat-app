@@ -1,6 +1,6 @@
 # Secure Group Messaging System
 
-A Node.js backend for a secure group messaging system with user authentication, group management, and encrypted messaging.
+A Node.js backend for a secure group messaging system with user authentication, group management, encrypted messaging, and real-time communication.
 
 ## Features
 
@@ -13,8 +13,10 @@ A Node.js backend for a secure group messaging system with user authentication, 
   - Ownership transfer
 - Encrypted Messaging
   - AES-128 encryption for all messages
-  - Real-time messaging support (simulated with timestamps)
+  - Real-time messaging with WebSocket
+  - Message queuing with RabbitMQ
 - API Documentation with Swagger
+- Comprehensive Test Coverage
 
 ## Tech Stack
 
@@ -23,6 +25,9 @@ A Node.js backend for a secure group messaging system with user authentication, 
 - MongoDB (with Mongoose)
 - JSON Web Tokens (JWT)
 - AES-128 Encryption
+- Socket.IO for WebSocket
+- RabbitMQ for Message Queuing
+- Jest for Testing
 - Swagger UI for API documentation
 
 ## Setup
@@ -32,20 +37,29 @@ A Node.js backend for a secure group messaging system with user authentication, 
    npm install
    ```
 
-2. Create a `.env` file in the root directory with:
+2. Start RabbitMQ server (make sure RabbitMQ is installed):
+   ```bash
+   # MacOS (using Homebrew)
+   brew services start rabbitmq
+   # Linux
+   sudo service rabbitmq-server start
+   ```
+
+3. Create a `.env` file in the root directory with:
    ```
    MONGODB_URI=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret
    AES_SECRET_KEY=your_aes_secret_key
    PORT=3000
+   RABBITMQ_URL=amqp://localhost
    ```
 
-3. Build the TypeScript code:
+4. Build the TypeScript code:
    ```bash
    npm run build
    ```
 
-4. Start the server:
+5. Start the server:
    ```bash
    npm start
    ```
@@ -71,6 +85,7 @@ Access the Swagger documentation at `http://localhost:3000/api-docs` when the se
 #### Messages
 - POST `/api/messages/:groupId` - Send message to group
 - GET `/api/messages/:groupId` - Get group messages
+- WebSocket events documented below
 
 ## Security Features
 
@@ -91,159 +106,143 @@ Access the Swagger documentation at `http://localhost:3000/api-docs` when the se
    - Encrypted storage in database
    - Secure message retrieval only for group members
 
-## Real-time Support
+## Real-time Communication Architecture
 
-The current implementation uses timestamps for message ordering. To implement real-time functionality:
+The system uses a hybrid approach combining WebSocket and Message Queue:
 
-1. Add WebSocket support using Socket.IO:
-   ```typescript
-   import { Server } from 'socket.io';
-   
-   const io = new Server(httpServer);
-   io.on('connection', (socket) => {
-     socket.on('joinGroup', (groupId) => {
-       socket.join(groupId);
-     });
-     
-     socket.on('message', async (data) => {
-       // Handle real-time message broadcasting
-     });
-   });
+1. WebSocket (Socket.IO):
+   - Real-time client-server communication
+   - Group-based message broadcasting
+   - Connection state management
+   - Client authentication
+
+2. RabbitMQ Message Queue:
+   - Reliable message delivery
+   - Message persistence
+   - Horizontal scaling support
+   - Event-driven communication between services
+
+### WebSocket Events
+
+1. Client -> Server:
+   - `joinGroup`: Join a group's real-time channel
+   - `leaveGroup`: Leave a group's channel
+   - `sendMessage`: Send a message to a group
+
+2. Server -> Client:
+   - `newMessage`: Receive new messages
+   - `error`: Error notifications
+   - `joined`: Group join confirmation
+
+### Message Queue Topics
+
+1. Exchanges:
+   - `chat_messages` (fanout): Real-time message broadcasting
+   - `group_events` (topic): Group-related events
+
+2. Routing Keys:
+   - `group.[groupId].*`: Group-specific events
+   - `user.[userId].*`: User-specific notifications
+
+## Testing
+
+The project includes comprehensive test coverage:
+
+1. Unit Tests:
+   - Controllers
+   - Models
+   - Utilities
+   - WebSocket handlers
+   - Message queue operations
+
+2. Integration Tests:
+   - API endpoints
+   - WebSocket communication
+   - Message queue integration
+   - Database operations
+
+3. Run Tests:
+   ```bash
+   # Unit tests
+   npm test
+   # Coverage report
+   npm run test:coverage
    ```
 
-2. Update the message controller to emit events:
-   ```typescript
-   io.to(groupId).emit('newMessage', message);
-   ```
+4. Test Environment:
+   - Uses in-memory MongoDB
+   - Mock WebSocket connections
+   - Test RabbitMQ instance
 
-## Real-time Implementation with WebSockets
-
-While the current implementation uses timestamps for message ordering, here's how to implement real-time messaging using WebSocket:
-
-1. Install required dependencies:
-```bash
-npm install socket.io @types/socket.io
-```
-
-2. WebSocket Server Setup:
+### Example WebSocket Test:
 ```typescript
-// src/websocket/socket.ts
-import { Server } from 'socket.io';
-import { Server as HttpServer } from 'http';
-import { decryptMessage } from '../utils/encryption';
-
-export const setupWebSocket = (httpServer: HttpServer) => {
-  const io = new Server(httpServer);
-
-  io.on('connection', (socket) => {
-    // Handle joining group channels
-    socket.on('joinGroup', (groupId: string) => {
-      socket.join(groupId);
-    });
-
-    // Handle leaving group channels
-    socket.on('leaveGroup', (groupId: string) => {
-      socket.leave(groupId);
-    });
-
-    // Handle new messages
-    socket.on('sendMessage', async (data: { 
-      groupId: string;
-      content: string;
-      senderId: string;
-    }) => {
-      // Broadcast to all members in the group
-      io.to(data.groupId).emit('newMessage', {
-        content: data.content,
-        sender: data.senderId,
-        timestamp: new Date()
+describe('WebSocket Integration', () => {
+  it('should handle real-time message delivery', async () => {
+    const socket = io('http://localhost:3000');
+    socket.emit('joinGroup', groupId);
+    
+    await new Promise(resolve => {
+      socket.on('newMessage', (message) => {
+        expect(message.content).toBe('Hello');
+        resolve(true);
       });
     });
   });
-
-  return io;
-};
+});
 ```
 
-3. Integration with Express:
+### Example RabbitMQ Test:
 ```typescript
-// src/index.ts
-import { createServer } from 'http';
-import { setupWebSocket } from './websocket/socket';
-
-const httpServer = createServer(app);
-const io = setupWebSocket(httpServer);
-
-// Attach io to request for use in controllers
-app.use((req: any, res, next) => {
-  req.io = io;
-  next();
-});
-
-httpServer.listen(PORT);
-```
-
-4. Update Message Controller:
-```typescript
-// In messageController.ts sendMessage function
-const message = await Message.create({...});
-req.io.to(groupId).emit('newMessage', {
-  content: messageContent,
-  sender: req.user._id,
-  timestamp: new Date()
+describe('Message Queue Integration', () => {
+  it('should handle message publication', async () => {
+    const channel = await rabbitmq.getChannel();
+    await channel.assertQueue(queueName);
+    
+    await channel.publish('chat_messages', '', 
+      Buffer.from(JSON.stringify({ content: 'Hello' }))
+    );
+    
+    const message = await new Promise(resolve => {
+      channel.consume(queueName, (msg) => {
+        channel.ack(msg!);
+        resolve(JSON.parse(msg!.content.toString()));
+      });
+    });
+    
+    expect(message.content).toBe('Hello');
+  });
 });
 ```
 
-5. Client Implementation Example:
-```typescript
-import { io } from 'socket.io-client';
+## Swagger Documentation
 
-const socket = io('http://localhost:3000');
-
-// Join a group channel
-socket.emit('joinGroup', groupId);
-
-// Listen for new messages
-socket.on('newMessage', (message) => {
-  console.log('New message:', message);
-});
-
-// Send a message
-socket.emit('sendMessage', {
-  groupId,
-  content: 'Hello!',
-  senderId: userId
-});
-```
-
-### WebSocket Security Considerations
+The API is documented using OpenAPI (Swagger) specification. Key documentation sections:
 
 1. Authentication:
-   - Implement token verification on WebSocket connection
-   - Validate group membership before joining channels
-   - Encrypt WebSocket messages
+   - Bearer token authentication
+   - Request/response schemas
+   - Error responses
 
-2. Rate Limiting:
-   - Implement message rate limiting per user
-   - Add connection limits per user
+2. WebSocket:
+   - Event documentation
+   - Message formats
+   - Authentication process
 
-3. Connection Management:
-   - Handle reconnection logic
-   - Implement heartbeat mechanism
-   - Clean up abandoned connections
-
-4. Example WebSocket Authentication:
-```typescript
-io.use((socket, next) => {
-  const token = socket.handshake.auth.token;
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!);
-    socket.data.user = decoded;
-    next();
-  } catch (error) {
-    next(new Error('Authentication error'));
-  }
-});
+3. Example Swagger WebSocket Documentation:
+```yaml
+components:
+  schemas:
+    WebSocketMessage:
+      type: object
+      properties:
+        type: string
+        groupId: string
+        content: string
+        timestamp: string
+      required:
+        - type
+        - groupId
+        - content
 ```
 
 ## AI Tool Usage

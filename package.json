@@ -6,7 +6,13 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest --runInBand",
+    "test:watch": "jest --watch --runInBand",
+    "test:coverage": "jest --coverage --runInBand",
+    "test:websocket": "jest websocket.test.ts --runInBand",
+    "test:rabbitmq": "jest rabbitmq.test.ts --runInBand",
+    "test:integration": "jest --testMatch '**/src/__tests__/*.test.ts' --runInBand"
   },
   "repository": {
     "type": "git",
@@ -54,6 +60,7 @@
     "@types/jest": "^29.5.14",
     "@types/jsonwebtoken": "*",
     "@types/node": "^22.14.1",
+    "@types/socket.io-client": "^1.4.36",
     "@types/supertest": "^6.0.3",
     "@types/swagger-ui-express": "*",
     "@typescript-eslint/eslint-plugin": "^8.29.1",
@@ -66,6 +73,7 @@
     "jest-json-reporter": "^1.2.2",
     "mongodb-memory-server": "^10.1.4",
     "prettier": "^3.5.3",
+    "socket.io-client": "^4.8.1",
     "supertest": "^7.1.0",
     "ts-jest": "^29.3.1",
     "ts-node-dev": "^2.0.0",

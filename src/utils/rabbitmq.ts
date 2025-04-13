@@ -23,7 +23,7 @@ class RabbitMQWrapper {
     async connect(): Promise<void> {
         try {
             // Use the Promise-based API with type assertion
-            const connection = await amqplib.connect(process.env.RABBITMQ_URL || 'amqp://localhost') as unknown as RabbitMQConnection;
+            const connection = await amqplib.connect(process.env.RABBITMQ_URL || 'amqp://localhost:5672') as unknown as RabbitMQConnection;
             this._connection = connection;
             
             const channel = await this._connection.createChannel();
