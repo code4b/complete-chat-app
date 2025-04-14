@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 export interface IUser extends Document {
     email: string;
     password: string;
+    isVerified: boolean;
     bannedGroups: mongoose.Types.ObjectId[];
     comparePassword(candidatePassword: string): Promise<boolean>;
 }

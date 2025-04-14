@@ -21,6 +21,9 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
             if (!user) {
                 return res.status(401).json({ message: 'Invalid authentication token' });
             }
+            if (!user.isVerified) {
+                return res.status(401).json({ message: 'User not verified' });
+            }
 
             req.user = user;
             next();

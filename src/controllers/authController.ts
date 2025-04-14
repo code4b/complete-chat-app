@@ -93,8 +93,7 @@ export const register = async (req: Request, res: Response) => {
 
         res.status(201).json({
             _id: user._id.toString(),
-            email: user.email,
-            token: generateToken(user._id.toString()),
+            email: user.email
         });
     } catch (error: any) {
         res.status(500).json({ message: error.message });
@@ -108,6 +107,9 @@ export const login = async (req: Request, res: Response) => {
         const user = await User.findOne({ email }) as IUser & { _id: mongoose.Types.ObjectId };
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
+        }
+        if (!user.isVerified) {
+            return res.status(401).json({ message: 'User not verified' });
         }
 
         const isMatch = await user.comparePassword(password);
