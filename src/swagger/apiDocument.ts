@@ -1,46 +1,11 @@
-export const socketDocument = {
+// Swagger documentation setup
+export const apiDocument = {
     openapi: '3.0.0',
     info: {
         title: 'Secure Group Messaging API',
         version: '1.0.0',
-        description: `
-API documentation for secure group messaging system with real-time capabilities.
-
-## Real-time Communication
-This API supports real-time messaging using WebSocket connections and RabbitMQ message queuing.
-
-### WebSocket Events
-- **Connection**: Connect with authentication token
-  \`\`\`javascript
-  const socket = io('http://localhost:3000', {
-    auth: { token: 'your-jwt-token' }
-  });
-  \`\`\`
-
-- **Join Group**: Join a group's real-time channel
-  \`\`\`javascript
-  socket.emit('joinGroup', groupId);
-  \`\`\`
-
-- **Send Message**: Send a real-time message
-  \`\`\`javascript
-  socket.emit('sendMessage', {
-    groupId: 'group-id',
-    content: 'message content'
-  });
-  \`\`\`
-
-### Message Queue Integration
-Messages are processed through RabbitMQ exchanges:
-- chat_messages (fanout): Real-time message broadcasting
-- group_events (topic): Group-specific events`
+        description: 'API documentation for the secure group messaging system'
     },
-    servers: [
-        {
-            url: 'http://localhost:3000',
-            description: 'Local development server'
-        }
-    ],
     components: {
         securitySchemes: {
             BearerAuth: {
@@ -50,102 +15,434 @@ Messages are processed through RabbitMQ exchanges:
             }
         },
         schemas: {
-            WebSocketMessage: {
+            User: {
                 type: 'object',
                 properties: {
-                    type: {
-                        type: 'string',
-                        enum: ['message', 'join', 'leave'],
-                        description: 'Type of WebSocket event'
-                    },
-                    groupId: {
-                        type: 'string',
-                        description: 'ID of the group'
-                    },
-                    content: {
-                        type: 'string',
-                        description: 'Message content (for message type)'
-                    },
-                    timestamp: {
-                        type: 'string',
-                        format: 'date-time',
-                        description: 'Event timestamp'
-                    }
-                },
-                required: ['type', 'groupId']
+                    _id: { type: 'string' },
+                    email: { type: 'string' },
+                    token: { type: 'string' }
+                }
             },
-            WebSocketError: {
+            Group: {
                 type: 'object',
                 properties: {
-                    error: {
-                        type: 'string',
-                        description: 'Error message'
+                    _id: { type: 'string' },
+                    name: { type: 'string' },
+                    isPrivate: { type: 'boolean' },
+                    owner: { type: 'string' },
+                    members: { 
+                        type: 'array',
+                        items: { type: 'string' }
                     },
-                    code: {
-                        type: 'string',
-                        description: 'Error code'
-                    }
-                },
-                required: ['error']
-            },
-            WebSocketEvent: {
-                type: 'object',
-                properties: {
-                    type: {
-                        type: 'string',
-                        enum: ['joinGroup', 'leaveGroup', 'sendMessage', 'newMessage', 'error'],
-                        description: 'Type of WebSocket event'
+                    joinRequests: {
+                        type: 'array',
+                        items: { type: 'string' }
                     },
-                    payload: {
-                        type: 'object',
-                        oneOf: [
-                            {
-                                type: 'object',
-                                properties: {
-                                    groupId: { type: 'string' }
-                                },
-                                required: ['groupId']
-                            },
-                            {
-                                type: 'object',
-                                properties: {
-                                    groupId: { type: 'string' },
-                                    content: { type: 'string' }
-                                },
-                                required: ['groupId', 'content']
-                            }
-                        ]
+                    bannedUsers: {
+                        type: 'array',
+                        items: { type: 'string' }
                     }
                 }
             },
-            WebSocketResponse: {
+            Message: {
                 type: 'object',
                 properties: {
-                    type: {
-                        type: 'string',
-                        enum: ['joined', 'newMessage', 'error']
-                    },
-                    payload: {
-                        type: 'object'
-                    }
+                    _id: { type: 'string' },
+                    content: { type: 'string' },
+                    sender: { type: 'string' },
+                    group: { type: 'string' },
+                    timestamp: { type: 'string', format: 'date-time' }
+                }
+            },
+            Error: {
+                type: 'object',
+                properties: {
+                    message: { type: 'string' }
                 }
             }
         }
     },
     paths: {
-        '/api/messages/{groupId}': {
+        '/api/auth/register': {
             post: {
-                tags: ['Messages'],
-                summary: 'Send a message to a group',
+                tags: ['Authentication'],
+                summary: 'Register a new user',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['email', 'password'],
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    password: { type: 'string', format: 'password' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    '201': {
+                        description: 'User registered successfully',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/User' }
+                            }
+                        }
+                    },
+                    '400': {
+                        description: 'Invalid input or user already exists',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/auth/login': {
+            post: {
+                tags: ['Authentication'],
+                summary: 'Login user',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['email', 'password'],
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    password: { type: 'string', format: 'password' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    '200': {
+                        description: 'Login successful',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/User' }
+                            }
+                        }
+                    },
+                    '401': {
+                        description: 'Invalid credentials',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/groups': {
+            post: {
+                tags: ['Groups'],
                 security: [{ BearerAuth: [] }],
+                summary: 'Create a new group',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['name', 'isPrivate', 'initialMembers'],
+                                properties: {
+                                    name: { type: 'string' },
+                                    isPrivate: { type: 'boolean' },
+                                    maxMembers: { 
+                                        type: 'number',
+                                        minimum: 2,
+                                        description: 'Maximum number of members allowed in the group. If not provided, group size is unlimited.'
+                                    },
+                                    initialMembers: {
+                                        type: 'array',
+                                        items: { type: 'string' },
+                                        minItems: 1,
+                                        description: 'Array of user IDs to add as initial members. Must contain at least one member besides the owner.'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    '201': {
+                        description: 'Group created successfully',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Group' }
+                            }
+                        }
+                    },
+                    '400': {
+                        description: 'Invalid input or group creation constraints not met',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            },
+            get: {
+                tags: ['Groups'],
+                security: [{ BearerAuth: [] }],
+                summary: 'List all groups',
+                parameters: [
+              
+                    {
+                        in: 'query',
+                        name: 'limit',
+                        schema: { 
+                            type: 'integer',
+                            default: 50
+                        }
+                    },
+                    {
+                        in: 'query',
+                        name: 'page',
+                        schema: { 
+                            type: 'integer',
+                            default: 1
+                        }
+                    }
+                ],
+                responses: {
+                    '200': {
+                        description: 'Group List retrieved successfully',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'array',
+                                    items: { $ref: '#/components/schemas/Message' }
+                                }
+                            }
+                        }
+                    },
+                    '403': {
+                        description: 'Not authorized',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        
+        '/api/groups/{groupId}/join': {
+            post: {
+                tags: ['Groups'],
+                security: [{ BearerAuth: [] }],
+                summary: 'Join or request to join a group',
+                parameters: [{
+                    in: 'path',
+                    name: 'groupId',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+                responses: {
+                    '200': {
+                        description: 'Joined group or sent join request',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    oneOf: [
+                                        { $ref: '#/components/schemas/Group' },
+                                        {
+                                            type: 'object',
+                                            properties: {
+                                                message: { type: 'string', example: 'Join request sent' }
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    '403': {
+                        description: 'User is banned or needs to wait after leaving',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/groups/{groupId}/approve/{userId}': {
+            post: {
+                tags: ['Groups'],
+                security: [{ BearerAuth: [] }],
+                summary: 'Approve a join request',
                 parameters: [
                     {
                         in: 'path',
                         name: 'groupId',
                         required: true,
                         schema: { type: 'string' }
+                    },
+                    {
+                        in: 'path',
+                        name: 'userId',
+                        required: true,
+                        schema: { type: 'string' }
                     }
                 ],
+                responses: {
+                    '200': {
+                        description: 'Join request approved',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Group' }
+                            }
+                        }
+                    },
+                    '403': {
+                        description: 'Not authorized',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/groups/{groupId}/leave': {
+            post: {
+                tags: ['Groups'],
+                security: [{ BearerAuth: [] }],
+                summary: 'Leave a group',
+                parameters: [{
+                    in: 'path',
+                    name: 'groupId',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
+                responses: {
+                    '200': {
+                        description: 'Left group successfully',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'object',
+                                    properties: {
+                                        message: { type: 'string' }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    '400': {
+                        description: 'Owner must transfer ownership before leaving',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/groups/{groupId}/ban/{userId}': {
+            post: {
+                tags: ['Groups'],
+                security: [{ BearerAuth: [] }],
+                summary: 'Ban a user from the group',
+                parameters: [
+                    {
+                        in: 'path',
+                        name: 'groupId',
+                        required: true,
+                        schema: { type: 'string' }
+                    },
+                    {
+                        in: 'path',
+                        name: 'userId',
+                        required: true,
+                        schema: { type: 'string' }
+                    }
+                ],
+                responses: {
+                    '200': {
+                        description: 'User banned successfully',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Group' }
+                            }
+                        }
+                    },
+                    '403': {
+                        description: 'Not authorized or cannot ban owner',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/groups/{groupId}/transfer/{newOwnerId}': {
+            post: {
+                tags: ['Groups'],
+                security: [{ BearerAuth: [] }],
+                summary: 'Transfer group ownership',
+                parameters: [
+                    {
+                        in: 'path',
+                        name: 'groupId',
+                        required: true,
+                        schema: { type: 'string' }
+                    },
+                    {
+                        in: 'path',
+                        name: 'newOwnerId',
+                        required: true,
+                        schema: { type: 'string' }
+                    }
+                ],
+                responses: {
+                    '200': {
+                        description: 'Ownership transferred successfully',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Group' }
+                            }
+                        }
+                    },
+                    '403': {
+                        description: 'Not authorized or new owner must be a member',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/messages/{groupId}': {
+            post: {
+                tags: ['Messages'],
+                security: [{ BearerAuth: [] }],
+                summary: 'Send a message to a group',
+                parameters: [{
+                    in: 'path',
+                    name: 'groupId',
+                    required: true,
+                    schema: { type: 'string' }
+                }],
                 requestBody: {
                     required: true,
                     content: {
@@ -165,55 +462,12 @@ Messages are processed through RabbitMQ exchanges:
                         description: 'Message sent successfully',
                         content: {
                             'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    properties: {
-                                        _id: { type: 'string' },
-                                        content: { type: 'string' },
-                                        sender: { type: 'string' },
-                                        group: { type: 'string' },
-                                        timestamp: { 
-                                            type: 'string',
-                                            format: 'date-time'
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        '/websocket': {
-            get: {
-                tags: ['WebSocket'],
-                summary: 'WebSocket connection endpoint',
-                description: `
-Establishes a WebSocket connection for real-time messaging.
-                
-Authentication is required via token in the connection handshake:
-\`\`\`javascript
-const socket = io('http://localhost:3000', {
-    auth: { token: 'your-jwt-token' }
-});
-\`\`\``,
-                security: [{ BearerAuth: [] }],
-                responses: {
-                    '101': {
-                        description: 'WebSocket connection established',
-                        content: {
-                            'application/json': {
-                                schema: {
-                                    type: 'object',
-                                    properties: {
-                                        status: { type: 'string', example: 'connected' }
-                                    }
-                                }
+                                schema: { $ref: '#/components/schemas/Message' }
                             }
                         }
                     },
-                    '401': {
-                        description: 'Authentication failed',
+                    '403': {
+                        description: 'Not a member of the group',
                         content: {
                             'application/json': {
                                 schema: { $ref: '#/components/schemas/Error' }
@@ -221,46 +475,52 @@ const socket = io('http://localhost:3000', {
                         }
                     }
                 }
-            }
-        }
-    },
-    tags: [
-        {
-            name: 'Real-time Communication',
-            description: 'WebSocket endpoints for real-time messaging'
-        },
-        {
-            name: 'WebSocket',
-            description: 'Real-time messaging endpoints using WebSocket'
-        }
-    ],
-    webhooks: {
-        'newMessage': {
-            post: {
-                summary: 'New message event (WebSocket)',
-                requestBody: {
-                    content: {
-                        'application/json': {
-                            schema: {
-                                $ref: '#/components/schemas/WebSocketMessage'
-                            }
+            },
+            get: {
+                tags: ['Messages'],
+                security: [{ BearerAuth: [] }],
+                summary: 'Get messages from a group',
+                parameters: [
+                    {
+                        in: 'path',
+                        name: 'groupId',
+                        required: true,
+                        schema: { type: 'string' }
+                    },
+                    {
+                        in: 'query',
+                        name: 'limit',
+                        schema: { 
+                            type: 'integer',
+                            default: 50
+                        }
+                    },
+                    {
+                        in: 'query',
+                        name: 'before',
+                        schema: { 
+                            type: 'string',
+                            format: 'date-time'
                         }
                     }
-                }
-            }
-        },
-        'joinGroup': {
-            post: {
-                summary: 'Join group event (WebSocket)',
-                requestBody: {
-                    content: {
-                        'application/json': {
-                            schema: {
-                                type: 'object',
-                                properties: {
-                                    groupId: { type: 'string' }
-                                },
-                                required: ['groupId']
+                ],
+                responses: {
+                    '200': {
+                        description: 'Messages retrieved successfully',
+                        content: {
+                            'application/json': {
+                                schema: {
+                                    type: 'array',
+                                    items: { $ref: '#/components/schemas/Message' }
+                                }
+                            }
+                        }
+                    },
+                    '403': {
+                        description: 'Not a member of the group',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
                             }
                         }
                     }
