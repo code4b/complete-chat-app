@@ -48,10 +48,16 @@ A Node.js backend for a secure group messaging system with user authentication, 
 
 2. Create a `.env` file in the root directory with:
    ```
-   MONGODB_URI=your_mongodb_connection_string
-   JWT_SECRET=your_jwt_secret
-   AES_SECRET_KEY=your_aes_secret_key
-   PORT=3000
+NODE_ENV=developement
+MONGODB_URI=mongodb://localhost:27017/secure-messaging
+JWT_SECRET=your_jwt_secret_key
+JWT_EXPIRATION=24h
+AES_SECRET_KEY=your-aes-secret-key
+RABBITMQ_URL=amqp://localhost:5672
+PORT=3000
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX_REQUESTS=100
+LOG_LEVEL=debug
    ```
 
 3. Build the TypeScript code:
@@ -362,6 +368,14 @@ This project was developed with the assistance of GitHub Copilot, which helped w
     - Implement message caching
     - Set resource limits in Kubernetes
     - Configure pod affinity rules
+7. Test Coverage Pending:
+    - WebSocket connection stress tests
+    - Group messaging load tests
+    - End-to-end encryption verification
+    - Multi-node cluster performance tests
+    - Database failover scenarios
+    - Rate limiting boundary tests
+    - Authentication edge cases
 
 ## Contributing
 
