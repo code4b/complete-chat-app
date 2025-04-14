@@ -268,7 +268,7 @@ io.use((socket, next) => {
 
 ## AI Tool Usage
 
-This project was developed with the assistance of GitHub Copilot, which helped with:
+This project was developed with the assistance of ChatGPT, GitHub Copilot, which helped with:
 - Code structure and organization
 - Security best practices implementation
 - API endpoint design
@@ -368,6 +368,7 @@ This project was developed with the assistance of GitHub Copilot, which helped w
     - Implement message caching
     - Set resource limits in Kubernetes
     - Configure pod affinity rules
+
 7. Test Coverage Pending:
     - WebSocket connection stress tests
     - Group messaging load tests
