@@ -7,7 +7,7 @@ import { User } from '../models/User';
 import { Group } from '../models/Group';
 import jwt from 'jsonwebtoken';
 import mongoose, { Document } from 'mongoose';
-import { rabbitmq } from '../utils/rabbitmq';
+import { rabbitmq } from '../services/rabbitmq';
 
 interface TestUser extends Document {
     _id: mongoose.Types.ObjectId;

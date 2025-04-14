@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import dotenv from 'dotenv';
-import { rabbitmq } from '../utils/rabbitmq';
+import { rabbitmq } from '../services/rabbitmq';
 
 // Load test environment variables
 process.env.JWT_SECRET = 'test-jwt-secret';

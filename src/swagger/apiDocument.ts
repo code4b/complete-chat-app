@@ -23,6 +23,12 @@ export const apiDocument = {
                     token: { type: 'string' }
                 }
             },
+            Otp: {
+                type: 'object',
+                properties: {
+                    message: { type: 'string' }
+                }
+            },
             Group: {
                 type: 'object',
                 properties: {
@@ -77,6 +83,83 @@ export const apiDocument = {
                                 properties: {
                                     email: { type: 'string', format: 'email' },
                                     password: { type: 'string', format: 'password' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    '201': {
+                        description: 'User registered successfully',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/User' }
+                            }
+                        }
+                    },
+                    '400': {
+                        description: 'Invalid input or user already exists',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/auth/sendotp': {
+            post: {
+                tags: ['Authentication'],
+                summary: 'Send OTP to email',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['email'],
+                                properties: {
+                                    email: { type: 'string', format: 'email' }
+                                }
+                            }
+                        }
+                    }
+                },
+                responses: {
+                    '201': {
+                        description: 'OTP sent successfully',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Otp' }
+                            }
+                        }
+                    },
+                    '400': {
+                        description: 'Invalid input or user already exists',
+                        content: {
+                            'application/json': {
+                                schema: { $ref: '#/components/schemas/Error' }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        '/api/auth/verifyotp': {
+            post: {
+                tags: ['Authentication'],
+                summary: 'Verify OTP',
+                requestBody: {
+                    required: true,
+                    content: {
+                        'application/json': {
+                            schema: {
+                                type: 'object',
+                                required: ['email', 'otp'],
+                                properties: {
+                                    email: { type: 'string', format: 'email' },
+                                    otp: { type: 'string', format: 'password' }
                                 }
                             }
                         }

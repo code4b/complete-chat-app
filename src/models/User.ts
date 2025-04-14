@@ -20,6 +20,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    isVerified: {
+        type: Boolean,
+        default: false,
+    },
     bannedGroups: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Group'

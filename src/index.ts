@@ -7,7 +7,7 @@ import debugLib from 'debug';
 import { connectDB } from './config/database';
 import { createServer } from 'http';
 import { setupWebSocket } from './websocket/socket';
-import { rabbitmq } from './utils/rabbitmq';
+import { rabbitmq } from './services/rabbitmq';
 import authRoutes from './routes/authRoutes';
 import groupRoutes from './routes/groupRoutes';
 import messageRoutes from './routes/messageRoutes';
@@ -37,7 +37,7 @@ app.use('/api/messages', messageRoutes);
 
 
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(socketDocument));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(apiDocument));
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

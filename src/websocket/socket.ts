@@ -1,7 +1,7 @@
 import { Server, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import { decryptMessage } from '../utils/encryption';
-import { rabbitmq } from '../utils/rabbitmq';
+import { rabbitmq } from '../services/rabbitmq';
 import jwt from 'jsonwebtoken';
 import { Group } from '../models/Group';
 import mongoose from 'mongoose';

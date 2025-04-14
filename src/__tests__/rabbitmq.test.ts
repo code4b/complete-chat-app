@@ -1,4 +1,4 @@
-import { rabbitmq } from '../utils/rabbitmq';
+import { rabbitmq } from '../services/rabbitmq';
 import { Channel } from 'amqplib';
 
 describe('RabbitMQ Integration', () => {

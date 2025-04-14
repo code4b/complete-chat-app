@@ -14,12 +14,12 @@ const router = express.Router();
 
 router.use(protect as RequestHandler); // All group routes require authentication
 
-router.post('/', createGroup as RequestHandler);
-router.get('/', listGroups as RequestHandler);
-router.post('/:groupId/join', joinGroup as RequestHandler);
-router.post('/:groupId/approve/:userId', approveJoinRequest as RequestHandler);
-router.post('/:groupId/leave', leaveGroup as RequestHandler);
-router.post('/:groupId/ban/:userId', banUser as RequestHandler);
-router.post('/:groupId/transfer/:newOwnerId', transferOwnership as RequestHandler);
+router.post('/', createGroup);
+router.get('/', listGroups );
+router.post('/:groupId/join', joinGroup );
+router.post('/:groupId/approve/:userId', approveJoinRequest );
+router.post('/:groupId/leave', leaveGroup);
+router.post('/:groupId/ban/:userId', banUser);
+router.post('/:groupId/transfer/:newOwnerId', transferOwnership);
 
 export default router;

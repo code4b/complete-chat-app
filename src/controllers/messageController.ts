@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Message } from '../models/Message';
 import { Group } from '../models/Group';
 import { encryptMessage, decryptMessage } from '../utils/encryption';
-import { rabbitmq } from '../utils/rabbitmq';
+import { rabbitmq } from '../services/rabbitmq';
 import mongoose from 'mongoose';
 
 interface AuthRequest extends Request {
