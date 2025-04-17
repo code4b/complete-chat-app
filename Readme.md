@@ -47,17 +47,17 @@ A Node.js backend for a secure group messaging system with user authentication, 
    ```
 
 2. Create a `.env` file in the root directory with:
-   ```
-NODE_ENV=developement
-MONGODB_URI=mongodb://localhost:27017/secure-messaging
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRATION=24h
-AES_SECRET_KEY=your-aes-secret-key
-RABBITMQ_URL=amqp://localhost:5672
-PORT=3000
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-LOG_LEVEL=debug
+   ```bash
+   NODE_ENV=developement
+   MONGODB_URI=mongodb://localhost:27017/secure-messaging
+   JWT_SECRET=your_jwt_secret_key
+   JWT_EXPIRATION=24h
+   AES_SECRET_KEY=your-aes-secret-key
+   RABBITMQ_URL=amqp://localhost:5672
+   PORT=3000
+   RATE_LIMIT_WINDOW_MS=900000
+   RATE_LIMIT_MAX_REQUESTS=100
+   LOG_LEVEL=debug
    ```
 
 3. Build the TypeScript code:
